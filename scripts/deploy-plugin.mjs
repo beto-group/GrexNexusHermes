@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execFileSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,20 +20,36 @@ if (!fs.existsSync(SRC_DIST)) {
 
 // Copy a source dir into a target dir, recreating the target cleanly first.
 // On the 99%-full workspace volume, fs.cpSync into a pre-existing (sometimes
-// permission-corrupted) directory throws EACCES. Work around it by staging into
-// a fresh temp dir beside the target, then atomically renaming over the target.
-function syncDir(src, dest) {
-  fs.rmSync(dest, { recursive: true, force: true });
-  const parent = path.dirname(dest);
-  const stage = path.join(parent, `.${path.basename(dest)}.stage-${process.pid}`);
-  fs.rmSync(stage, { recursive: true, force: true });
-  fs.mkdirSync(stage, { recursive: true });
-  fs.cpSync(src, stage, { recursive: true });
-  fs.renameSync(stage, dest);
+// permission-corrupted) directory intermittently throws EACCES. Fall back to a
+// shell `cp -r` (which has succeeded where fs.cpSync fails on this FS) so the
+// build never fails on a copy the OS can actually perform.
+function copyDir(src, dest) {
+  try {
+    fs.cpSync(src, dest, { recursive: true });
+  } catch (err) {
+    if (err && err.code === 'EACCES') {
+      execFileSync('cp', ['-r', src + '/.', dest + '/'], { stdio: 'ignore' });
+    } else {
+      throw err;
+    }
+  }
 }
 
-// 1. Local dashboard/dist
-syncDir(SRC_DIST, LOCAL_DASHBOARD_DIST);
+function syncDir(src, dest) {
+  fs.rmSync(dest, { recursive: true, force: true });
+  fs.mkdirSync(dest, { recursive: true });
+  copyDir(src, dest);
+}
+
+// 1. Local dashboard/dist (best-effort: on the 99%-full workspace volume the
+//    copy can intermittently EACCES; the real artifact is dist/index.js, which
+//    the installer pulls from GitHub, so a local-sync failure must not fail
+//    the build).
+try {
+  syncDir(SRC_DIST, LOCAL_DASHBOARD_DIST);
+} catch (err) {
+  console.warn(`[GrexNexusHermes Deploy] Skipped local dashboard/dist sync (${err.code || err.message}). dist/index.js is intact.`);
+}
 
 // 2. hermes-plugin-template (secondary target) — isolated so a missing or
 //    unwritable target never breaks the primary build.
