@@ -265,7 +265,7 @@ export function GrexNexusHermesDashboard() {
   return (
     <div style={{
       width: '100%',
-      height: '100%',
+      height: '100vh',
       flex: 1,
       minHeight: 0,
       display: 'flex',
