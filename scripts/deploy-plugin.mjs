@@ -18,12 +18,17 @@ if (!fs.existsSync(SRC_DIST)) {
 }
 
 // Copy a source dir into a target dir, recreating the target cleanly first.
-// (Some target dirs on the 99%-full volume can end up with broken perms;
-//  rm -rf + mkdir guarantees a writable destination without failing the build.)
+// On the 99%-full workspace volume, fs.cpSync into a pre-existing (sometimes
+// permission-corrupted) directory throws EACCES. Work around it by staging into
+// a fresh temp dir beside the target, then atomically renaming over the target.
 function syncDir(src, dest) {
   fs.rmSync(dest, { recursive: true, force: true });
-  fs.mkdirSync(dest, { recursive: true });
-  fs.cpSync(src, dest, { recursive: true });
+  const parent = path.dirname(dest);
+  const stage = path.join(parent, `.${path.basename(dest)}.stage-${process.pid}`);
+  fs.rmSync(stage, { recursive: true, force: true });
+  fs.mkdirSync(stage, { recursive: true });
+  fs.cpSync(src, stage, { recursive: true });
+  fs.renameSync(stage, dest);
 }
 
 // 1. Local dashboard/dist

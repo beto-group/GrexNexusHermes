@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom/client';
 import {
   Settings, Package, Trash2, KeyRound, DownloadCloud, AlertCircle, Play,
   Plus, Check, Info, RefreshCw, X, ChevronDown, Sliders, Globe, LayoutGrid,
@@ -743,11 +742,13 @@ export function GrexNexusHermesDashboard() {
 }
 
 // REGISTER-ONLY: the Hermes GUI loader owns the mount. It renders this
-// component inside the plugin's own sidebar tab container. We must NOT
-// call ReactDOM.createRoot(document.getElementById('root')) — that global
-// #root is the entire Hermes shell, and self-mounting would replace the
-// whole UI (GREX takes over the page on reload). The register name MUST
-// match "name" in dashboard/manifest.json exactly (grex-nexus-hermes).
-if (typeof window !== 'undefined' && window.__HERMES_PLUGINS__) {
+// component inside the plugin's own sidebar tab container, using the host's
+// own React (window.__HERMES_PLUGIN_SDK__.React). We consume React from the
+// SDK (see vite.config.js externals) — if we bundled our own React, hooks
+// would bind to a null dispatcher and throw "Cannot read properties of null
+// (reading 'useState')". We must NOT self-mount to the global #root.
+if (typeof window !== 'undefined' && window.__HERMES_PLUGINS__ && window.__HERMES_PLUGIN_SDK__ && window.__HERMES_PLUGIN_SDK__.React) {
   window.__HERMES_PLUGINS__.register("grex-nexus-hermes", GrexNexusHermesDashboard);
+} else {
+  console.error("[grex-nexus-hermes] Hermes plugin SDK (window.__HERMES_PLUGIN_SDK__.React) not available — plugin not registered.");
 }
