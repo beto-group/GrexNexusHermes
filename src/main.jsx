@@ -746,9 +746,23 @@ export function GrexNexusHermesDashboard() {
 // own React (window.__HERMES_PLUGIN_SDK__.React). We consume React from the
 // SDK (see vite.config.js externals) — if we bundled our own React, hooks
 // would bind to a null dispatcher and throw "Cannot read properties of null
-// (reading 'useState')". We must NOT self-mount to the global #root.
-if (typeof window !== 'undefined' && window.__HERMES_PLUGINS__ && window.__HERMES_PLUGIN_SDK__ && window.__HERMES_PLUGIN_SDK__.React) {
-  window.__HERMES_PLUGINS__.register("grex-nexus-hermes", GrexNexusHermesDashboard);
-} else {
-  console.error("[grex-nexus-hermes] Hermes plugin SDK (window.__HERMES_PLUGIN_SDK__.React) not available — plugin not registered.");
+// (reading 'useState')". The SDK's React default export has no .jsx/.jsxs, so
+// we expose a react/jsx-runtime shim built from React.createElement (used by
+// third-party code such as lucide-react). We must NOT self-mount to #root.
+if (typeof window !== 'undefined') {
+  const SDK = window.__HERMES_PLUGIN_SDK__;
+  if (SDK && SDK.React) {
+    // Provide react/jsx-runtime for any bundled dep that imports it
+    // (e.g. lucide-react). jsx/jsxs -> createElement; Fragment is on React.
+    window.__GREX_JSXRT__ = {
+      jsx: SDK.React.createElement,
+      jsxs: SDK.React.createElement,
+      Fragment: SDK.React.Fragment
+    };
+    if (window.__HERMES_PLUGINS__) {
+      window.__HERMES_PLUGINS__.register("grex-nexus-hermes", GrexNexusHermesDashboard);
+    }
+  } else {
+    console.error("[grex-nexus-hermes] Hermes plugin SDK (window.__HERMES_PLUGIN_SDK__.React) not available — plugin not registered.");
+  }
 }
