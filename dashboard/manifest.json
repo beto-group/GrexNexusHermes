@@ -1,0 +1,12 @@
+{
+  "name": "grex-nexus-hermes",
+  "label": "Grex Nexus",
+  "description": "Grex Nexus Sovereign Mothership Host Engine & Tiling WM Dashboard for Hermes.",
+  "icon": "LayoutGrid",
+  "version": "1.0.0",
+  "tab": {
+    "path": "/grex-nexus",
+    "position": "after:kanban"
+  },
+  "entry": "dist/index.js"
+}

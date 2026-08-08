@@ -1,0 +1,16 @@
+{
+  "id": "grex-nexus-hermes",
+  "name": "Grex Nexus Hermes Host Bridge",
+  "version": "1.0.0",
+  "type": "hermes-plugin",
+  "category": "host-bridge",
+  "description": "Universal Component Host & Sidecar IPC Bridge for Hermes AI Agent plugins. Serves and orchestrates Sovereign ESM/WASM components (Ordo, Tiling WM, Media Engine) via Hermes Sidecar.",
+  "capabilities": [
+    "component_loader",
+    "sidecar_ipc",
+    "agent_telemetry",
+    "podman_control"
+  ],
+  "main": "src/index.js",
+  "apiPort": 7777
+}
