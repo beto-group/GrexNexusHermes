@@ -8,5 +8,5 @@
     "path": "/grex-nexus",
     "position": "after:kanban"
   },
-  "entry": "dist/grex.js"
+  "entry": "dist/grex-bundle.js"
 }
