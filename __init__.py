@@ -88,6 +88,7 @@ def _make_request(url: str, payload: dict | None = None, timeout: int = 10) -> d
 
 def _handle_grex_status(*args, **kwargs) -> str:
     urls = [
+        "http://192.168.127.254:7777/api/status",
         "http://host.containers.internal:7777/api/status",
         "http://localhost:7777/api/status"
     ]
@@ -109,6 +110,7 @@ def _handle_grex_exec(*args, **kwargs) -> str:
         return "Error: command string required."
         
     urls = [
+        "http://192.168.127.254:7777/api/exec",
         "http://host.containers.internal:7777/api/exec",
         "http://localhost:7777/api/exec"
     ]
@@ -131,6 +133,7 @@ def _handle_grex_host_exec(*args, **kwargs) -> str:
         return "Error: command string required."
         
     urls = [
+        "http://192.168.127.254:7777/api/host/exec",
         "http://host.containers.internal:7777/api/host/exec",
         "http://localhost:7777/api/host/exec"
     ]

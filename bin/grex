@@ -5,6 +5,13 @@ import sys
 import json
 import urllib.request
 
+def _make_req(url, payload=None, timeout=300):
+    headers = {"Content-Type": "application/json"}
+    data_bytes = json.dumps(payload).encode("utf-8") if payload else None
+    req = urllib.request.Request(url, data=data_bytes, headers=headers)
+    with urllib.request.urlopen(req, timeout=timeout) as response:
+        return json.loads(response.read().decode("utf-8"))
+
 def main():
     args = sys.argv[1:]
     if not args or args[0] in ["-h", "--help", "help"]:
@@ -17,47 +24,40 @@ def main():
         return
 
     cmd = args[0].lower()
+    endpoints_base = [
+        "http://192.168.127.254:7777",
+        "http://host.containers.internal:7777",
+        "http://localhost:7777",
+        "http://127.0.0.1:7777"
+    ]
+
     if cmd == "status":
-        try:
-            req = urllib.request.urlopen("http://host.containers.internal:7777/api/status", timeout=3)
-            data = json.loads(req.read().decode("utf-8"))
-            print(json.dumps(data, indent=2))
-        except Exception:
+        for base in endpoints_base:
             try:
-                req = urllib.request.urlopen("http://localhost:7777/api/status", timeout=3)
-                data = json.loads(req.read().decode("utf-8"))
+                data = _make_req(f"{base}/api/status", timeout=3)
                 print(json.dumps(data, indent=2))
-            except Exception as e:
-                print(f"Error querying status: {e}")
+                return
+            except Exception:
+                continue
+        print("Error querying status: Could not connect to sidecar daemon.")
     elif cmd in ["exec", "host-exec"]:
-        endpoint = "/api/host/exec" if cmd == "host-exec" else "/api/exec"
+        sub_path = "/api/host/exec" if cmd == "host-exec" else "/api/exec"
         if len(args) < 2:
             print(f"Usage: grex {cmd} <command>")
             return
         cmd_str = " ".join(args[1:])
-        try:
-            payload = json.dumps({"command": cmd_str}).encode("utf-8")
-            req = urllib.request.Request(f"http://host.containers.internal:7777{endpoint}", data=payload, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=300) as response:
-                res = json.loads(response.read().decode("utf-8"))
+        for base in endpoints_base:
+            try:
+                res = _make_req(f"{base}{sub_path}", payload={"command": cmd_str}, timeout=300)
                 print(f"Exit Code: {res.get('exit_code', 0)}")
                 if res.get('stdout'):
                     print(f"Stdout:\n{res.get('stdout')}")
                 if res.get('stderr'):
                     print(f"Stderr:\n{res.get('stderr')}")
-        except Exception:
-            try:
-                payload = json.dumps({"command": cmd_str}).encode("utf-8")
-                req = urllib.request.Request(f"http://localhost:7777{endpoint}", data=payload, headers={"Content-Type": "application/json"})
-                with urllib.request.urlopen(req, timeout=300) as response:
-                    res = json.loads(response.read().decode("utf-8"))
-                    print(f"Exit Code: {res.get('exit_code', 0)}")
-                    if res.get('stdout'):
-                        print(f"Stdout:\n{res.get('stdout')}")
-                    if res.get('stderr'):
-                        print(f"Stderr:\n{res.get('stderr')}")
-            except Exception as e:
-                print(f"Error executing command: {e}")
+                return
+            except Exception:
+                continue
+        print(f"Error executing command: Could not connect to sidecar daemon.")
     elif cmd == "version":
         print("Grex Nexus Sovereign Mothership v1.0.0")
     else:
