@@ -7,5 +7,6 @@ requires_env: []
 provides_tools:
   - grex_status
   - grex_exec
+  - grex_host_exec
 provides_hooks:
   - post_tool_call
