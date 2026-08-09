@@ -169,10 +169,33 @@ def register(ctx) -> None:
     _ensure_cli_bin()
 
     if hasattr(ctx, "register_tool"):
-        ctx.register_tool(GREX_STATUS_SCHEMA, _handle_grex_status)
-        ctx.register_tool(GREX_EXEC_SCHEMA, _handle_grex_exec)
-        ctx.register_tool(GREX_HOST_EXEC_SCHEMA, _handle_grex_host_exec)
-        logger.info("Registered Grex Nexus tools: grex_status, grex_exec, grex_host_exec")
+        try:
+            ctx.register_tool(
+                name="grex_status",
+                toolset="grex-nexus",
+                schema=GREX_STATUS_SCHEMA,
+                handler=_handle_grex_status,
+            )
+            ctx.register_tool(
+                name="grex_exec",
+                toolset="grex-nexus",
+                schema=GREX_EXEC_SCHEMA,
+                handler=_handle_grex_exec,
+            )
+            ctx.register_tool(
+                name="grex_host_exec",
+                toolset="grex-nexus",
+                schema=GREX_HOST_EXEC_SCHEMA,
+                handler=_handle_grex_host_exec,
+            )
+            logger.info("Registered Grex Nexus tools: grex_status, grex_exec, grex_host_exec")
+        except Exception as e:
+            try:
+                ctx.register_tool(GREX_STATUS_SCHEMA, _handle_grex_status)
+                ctx.register_tool(GREX_EXEC_SCHEMA, _handle_grex_exec)
+                ctx.register_tool(GREX_HOST_EXEC_SCHEMA, _handle_grex_host_exec)
+            except Exception as ex:
+                logger.error("Could not register tools: %s (fallback %s)", e, ex)
 
     if hasattr(ctx, "register_command"):
         ctx.register_command("grex", _cmd_grex, description="Grex Nexus Sovereign Mothership status")
